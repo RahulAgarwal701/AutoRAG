@@ -1,0 +1,5 @@
+# Local-development overrides consumed by the Temporal server.
+# Values can be changed while Temporal is running; the server reloads this file.
+system.forceSearchAttributesCacheRefreshOnRead:
+  - value: true
+    constraints: {}

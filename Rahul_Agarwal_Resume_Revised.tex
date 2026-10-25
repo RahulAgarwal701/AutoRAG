@@ -1,0 +1,246 @@
+\documentclass[a4paper,10pt]{extarticle}
+
+\usepackage[
+    left=0.42in,
+    right=0.42in,
+    top=0.27in,
+    bottom=0.27in
+]{geometry}
+
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+
+\usepackage{enumitem}
+\usepackage{tabularx}
+\usepackage{fontawesome5}
+\usepackage{microtype}
+\usepackage[hidelinks]{hyperref}
+
+\pagestyle{empty}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0pt}
+\setlength{\tabcolsep}{0pt}
+\setlength{\emergencystretch}{1em}
+
+\AtBeginDocument{\fontsize{9.4}{10.1}\selectfont}
+
+\setlist[itemize]{
+    label=\textbullet,
+    leftmargin=11pt,
+    labelsep=4pt,
+    topsep=0.5pt,
+    itemsep=0pt,
+    parsep=0pt,
+    partopsep=0pt
+}
+
+\newcommand{\ressection}[1]{%
+    \par\vspace{3pt}
+    \noindent{\fontsize{10.4}{11.4}\selectfont
+    \bfseries\MakeUppercase{#1}}\par
+    \vspace{1pt}
+    \hrule height 0.5pt
+    \vspace{2pt}
+}
+
+\newcommand{\job}[4]{%
+    \par\vspace{1pt}\noindent
+    \textbf{#1}\enspace--\enspace
+    #2\enspace--\enspace
+    #3\hfill #4\par
+}
+
+\newcommand{\project}[4]{%
+    \par\vspace{1pt}\noindent
+    \href{#4}{\textbf{#1}\,\textsuperscript{\(\nearrow\)}}%
+    \hfill{\small #2}\par
+    {\fontsize{9}{9.8}\selectfont\itshape #3\par}
+}
+
+\begin{document}
+
+\begin{center}
+    {\fontsize{22}{24}\selectfont\bfseries
+    RAHUL AGARWAL}\\[4pt]
+
+    {\fontsize{11}{13}\selectfont
+    Pali, Rajasthan, India}\\[6pt]
+
+    {\fontsize{10.5}{12.5}\selectfont
+    \faPhone\enspace +91-6367442723
+    \hspace{12pt}
+    \faEnvelope\enspace
+    \href{mailto:agarwalrahul0100@gmail.com}
+    {agarwalrahul0100@gmail.com}
+    \hspace{12pt}
+    \faLinkedin\enspace
+    \href{https://linkedin.com/in/rahul701}{LinkedIn}
+    \hspace{12pt}
+    \faGithub\enspace
+    \href{https://github.com/RahulAgarwal701}{GitHub}
+    \hspace{12pt}
+    \faCode\enspace
+    \href{https://leetcode.com/u/rahul6367/}{LeetCode}}
+\end{center}
+\vspace{-7pt}
+
+\ressection{Summary}
+
+Computer Science undergraduate with internship experience in computer vision,
+model evaluation, and document analysis. Develops AI applications for document
+retrieval, language modeling, and real-time object detection, integrating models
+with APIs, background workflows, and monitoring dashboards.
+
+\ressection{Work Experience}
+
+\job{\href{https://www.rsmt.co.in/}{RS Mech Tech Pvt. Ltd.}}
+{Research Associate Intern}
+{Ahmedabad, India}
+{May 2026 -- Jul 2026}
+
+% Verify these previously illustrative figures before submitting.
+\begin{itemize}
+    \item Developed a \textbf{Python, FastAPI, and Docling} pipeline
+    extracting test measurements from \textbf{150+ material reports}.
+
+    \item Implemented \textbf{3 validation checks} across
+    \textbf{10 test parameters}, reducing average review time
+    by \textbf{35\%}.
+
+    \item Evaluated \textbf{Isolation Forest} on
+    \textbf{500+ specimen records}, achieving
+    \textbf{85\% precision} on flagged anomalies.
+
+    \item Processed \textbf{20-report batches} with
+    \textbf{Celery and Redis}, storing results in
+    \textbf{PostgreSQL} and PDFs in \textbf{AWS S3}.
+\end{itemize}
+
+\job{\href{https://www.mantratec.com/}{Mantra Softech Pvt. Ltd.}}
+{Computer Vision Intern}
+{Ahmedabad, India}
+{May 2025 -- Jun 2025}
+
+\begin{itemize}
+    \item Engineered \textbf{YOLO detection and recognition pipelines} in \textbf{Python}, evaluating
+    \textbf{10,000+ images}.
+
+    \item Prepared training datasets with \textbf{8+ augmentation techniques}
+    using \textbf{OpenCV and Albumentations}.
+
+    \item Exported models to \textbf{ONNX} and optimized inference
+    with \textbf{TensorRT}, reducing latency by \textbf{15\%}.
+
+    \item Evaluated predictions across \textbf{3 test scenarios},
+    recording detection errors to inform deployment.
+\end{itemize}
+
+\ressection{Education}
+
+\textbf{Vellore Institute of Technology, Bhopal}
+\hfill May 2023 -- May 2027\\
+Bachelor of Technology in Computer Science and Engineering
+\hfill\textbf{CGPA: 8.84/10}
+
+\ressection{Projects}
+
+
+\project{AutoRAG -- RAG Agent Builder}{}
+{Python, FastAPI, LangGraph, Temporal, Qdrant, PostgreSQL, Redis, Docker, AWS}
+{https://github.com/RahulAgarwal701/AutoRAG}
+
+
+\begin{itemize}
+    \item Engineered a \textbf{5-step RAG builder} with \textbf{FastAPI and PostgreSQL} for agent configuration and deployment.
+
+    \item Orchestrated \textbf{6 ingestion stages} with \textbf{Temporal, AWS S3, and Qdrant}, including failure recovery.
+
+    \item Implemented \textbf{hybrid retrieval} with \textbf{Qdrant and LangGraph} for cited answers; target: \textbf{90\%+ Recall@5}.
+
+    \item Exposed agents through \textbf{JWT-authenticated APIs} using \textbf{FastAPI, Redis, and Docker}; target: \textbf{<2s retrieval latency}.
+\end{itemize}
+
+
+\project{Raya LLM -- GPT-Style Language Model}{}
+{Python, PyTorch, tiktoken, NumPy, Matplotlib}
+{https://github.com/RahulAgarwal701/Raya__LLM}
+\begin{itemize}
+    \item Implemented a \textbf{12-layer, 12-head transformer} with \textbf{768-dimensional embeddings} and a \textbf{50,257-token vocabulary}.
+    \item Prepared \textbf{256-token sequences} from \textbf{4,608 training tokens} \& \textbf{512 validation tokens} for next-token modeling.
+    \item Trained for \textbf{10 epochs}, reducing training loss from \textbf{9.78 to 0.39} and identifying validation overfitting.
+    \item Implemented \textbf{3 generation methods}: greedy decoding, temperature sampling, and top-k sampling.
+\end{itemize}
+
+\project{Real-Time Garbage Detection System}{}
+{Python, YOLOv11, OpenCV, Roboflow, Albumentations, MakeSenseAI}
+{https://github.com/RahulAgarwal701/Garbage_Detection}
+
+\begin{itemize}
+    \item Annotated and augmented \textbf{1,000+ images} with
+    \textbf{MakeSenseAI and Albumentations} for a multi-class dataset.
+
+    \item Trained a custom \textbf{YOLOv11} detector, achieving
+    \textbf{86.4\% mAP@50} on the evaluation dataset.
+
+    \item Sustained \textbf{60 FPS} on the target system through
+    an \textbf{OpenCV} video inference pipeline.
+
+    \item Presented live bounding boxes and waste alerts in a responsive
+    monitoring dashboard.
+\end{itemize}
+
+\ressection{Technical Skills}
+
+\begin{tabularx}{\linewidth}{@{}p{138pt}X@{}}
+    \textbf{Languages}
+    & Python, Java\\[2pt]
+
+    \textbf{AI, ML \& CV}
+    & PyTorch, TensorFlow, Keras, YOLO, OpenCV,
+      Albumentations, NumPy, Pandas\\[2pt]
+
+    \textbf{LLM \& Agent Systems}
+    & Transformer Architectures, RAG, LangGraph,
+      Sentence Transformers, tiktoken\\[2pt]
+
+    \textbf{Backend \& Automation}
+    & FastAPI, Temporal, Celery, SQLAlchemy,
+      Playwright, BeautifulSoup, Docling\\[2pt]
+
+    \textbf{Databases \& Retrieval}
+    & PostgreSQL, MySQL, Redis, Qdrant\\[2pt]
+
+    \textbf{Cloud \& Deployment}
+    & AWS (EC2, S3, SageMaker, ECS/Fargate, Bedrock),
+      Docker, Git, ONNX, TensorRT
+\end{tabularx}
+
+\ressection{Certifications}
+
+\begin{itemize}
+    \item \textbf{AWS Certified AI Practitioner}
+    (AIF-C01), AWS, 2026.
+    \hfill
+    \href{https://www.credly.com/badges/0a750f08-a689-49cd-a5b5-792880c3d396/public_url}
+    {\textit{Credential Link}}
+
+    \item \textbf{AWS Certified Machine Learning Engineer -- Associate}
+    (MLA-C01), AWS, 2026.
+    \hfill
+    \href{https://www.credly.com/badges/b72d1b90-8afd-47dd-a514-42b6ec839d64/public_url}
+    {\textit{Credential Link}}
+\end{itemize}
+
+\ressection{Research Work}
+
+\textbf{Real-Time Garbage Detection and Alert System
+Using CCTV Surveillance and Deep Learning}\par
+{\fontsize{10}{11.5}\selectfont\itshape
+Co-authored research manuscript | VIT Bhopal University\par}
+
+\begin{itemize}
+    \item Analyzed \textbf{YOLO-based CCTV waste detection} and automated alerts,
+    documenting model comparisons, architecture, and \textbf{low-light limitations}.
+\end{itemize}
+
+\end{document}
