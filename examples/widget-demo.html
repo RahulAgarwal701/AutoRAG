@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>AutoRAG widget cross-origin demo</title>
+    <style>
+      body { margin: 0; font-family: system-ui, sans-serif; color: #0f172a; background: #f8fafc; }
+      main { max-width: 760px; margin: 80px auto; padding: 32px; border: 1px solid #e2e8f0; border-radius: 24px; background: white; box-shadow: 0 20px 60px rgba(15,23,42,.08); }
+      code { padding: 3px 7px; border-radius: 6px; background: #f1f5f9; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p>External customer website · <code>http://localhost:4173</code></p>
+      <h1>AutoRAG widget demo</h1>
+      <p>The floating button comes from port 3000 while this page runs on port 4173, exercising the real per-agent origin allow-list.</p>
+      <p>Replace <code>YOUR_AGENT_ID</code>, allow <code>http://localhost:4173</code> in the agent widget settings, then serve this directory.</p>
+    </main>
+    <script src="http://localhost:3000/widget.js" data-agent-id="YOUR_AGENT_ID"></script>
+  </body>
+</html>

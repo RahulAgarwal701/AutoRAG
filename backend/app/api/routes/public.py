@@ -72,9 +72,7 @@ async def _limit(
     }
     if not result.allowed:
         headers["Retry-After"] = str(reset_seconds)
-        raise PublicApiError(
-            429, "rate_limit_exceeded", "Too many requests", headers
-        )
+        raise PublicApiError(429, "rate_limit_exceeded", "Too many requests", headers)
     return headers
 
 
@@ -82,9 +80,7 @@ async def _authenticate(
     agent_id: uuid.UUID,
     request: Request,
     session: DatabaseSession,
-    credentials: Annotated[
-        HTTPAuthorizationCredentials | None, Security(bearer)
-    ],
+    credentials: Annotated[HTTPAuthorizationCredentials | None, Security(bearer)],
     limiter: RateLimiter,
 ) -> PublicAuthContext:
     request.state.rate_limit_headers = await _limit(
@@ -130,9 +126,7 @@ PublicAuth = Annotated[PublicAuthContext, Depends(_authenticate)]
                         },
                     }
                 },
-                "text/event-stream": {
-                    "example": "event: token\ndata: {\"text\":\"The total\"}\n\n"
-                },
+                "text/event-stream": {"example": 'event: token\ndata: {"text":"The total"}\n\n'},
             },
         },
         **ERROR_RESPONSES,
@@ -158,6 +152,7 @@ async def public_chat(
         )
     service = ChatAgentService(session)
     if payload.stream:
+
         async def events() -> AsyncIterator[str]:
             try:
                 async for event, data in service.stream_events(

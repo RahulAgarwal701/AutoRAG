@@ -189,9 +189,7 @@ class ChatAgentService:
         await self._session.flush()
         return chat_session
 
-    async def _load_history(
-        self, tenant_id: uuid.UUID, session_id: uuid.UUID
-    ) -> list[ChatTurn]:
+    async def _load_history(self, tenant_id: uuid.UUID, session_id: uuid.UUID) -> list[ChatTurn]:
         messages = await self._session.scalars(
             select(Message)
             .where(
@@ -201,4 +199,3 @@ class ChatAgentService:
             .order_by(Message.created_at.asc(), Message.id.asc())
         )
         return [ChatTurn(role=message.role, content=message.content) for message in messages]
-

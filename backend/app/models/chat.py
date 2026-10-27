@@ -51,4 +51,3 @@ class Message(CreatedAtMixin, Base):
     )
 
     chat_session: Mapped[ChatSession] = relationship(back_populates="messages")
-

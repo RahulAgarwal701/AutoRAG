@@ -31,9 +31,7 @@ def upgrade() -> None:
     )
     op.add_column(
         "agents",
-        sa.Column(
-            "chunk_overlap_percent", sa.Float(), nullable=False, server_default="0.12"
-        ),
+        sa.Column("chunk_overlap_percent", sa.Float(), nullable=False, server_default="0.12"),
     )
 
 

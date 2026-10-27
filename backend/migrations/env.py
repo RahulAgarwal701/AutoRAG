@@ -52,4 +52,3 @@ else:
     import asyncio
 
     asyncio.run(run_migrations_online())
-

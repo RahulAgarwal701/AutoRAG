@@ -66,3 +66,30 @@ async def test_hybrid_search_filters_dense_sparse_and_fused_query() -> None:
     assert prefetch[1].using == "sparse"
     query = cast(models.FusionQuery, client.query_kwargs["query"])
     assert query.fusion == models.Fusion.RRF
+
+
+@pytest.mark.asyncio
+async def test_dense_search_uses_only_dense_vector_with_tenant_filter() -> None:
+    tenant_id = uuid.uuid4()
+    agent_id = uuid.uuid4()
+    client = FakeQdrantClient()
+    searcher = QdrantHybridSearcher(client, "chunks")  # type: ignore[arg-type]
+
+    await searcher.search(
+        tenant_id=tenant_id,
+        agent_id=agent_id,
+        dense_vector=[0.1, 0.2],
+        sparse_vector=None,
+        limit=5,
+        mode="dense",
+    )
+
+    assert client.query_kwargs is not None
+    assert client.query_kwargs["query"] == [0.1, 0.2]
+    assert client.query_kwargs["using"] == "dense"
+    assert "prefetch" not in client.query_kwargs
+    query_filter = cast(models.Filter, client.query_kwargs["query_filter"])
+    assert filter_values(query_filter) == {
+        "tenant_id": str(tenant_id),
+        "agent_id": str(agent_id),
+    }

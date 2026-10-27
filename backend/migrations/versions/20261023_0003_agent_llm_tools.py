@@ -19,9 +19,7 @@ depends_on: str | Sequence[str] | None = None
 def upgrade() -> None:
     op.add_column(
         "agents",
-        sa.Column(
-            "llm_provider", sa.String(length=20), nullable=False, server_default="openai"
-        ),
+        sa.Column("llm_provider", sa.String(length=20), nullable=False, server_default="openai"),
     )
     op.add_column(
         "agents",

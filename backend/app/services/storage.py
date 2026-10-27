@@ -48,9 +48,7 @@ class S3ObjectStorage:
         await asyncio.to_thread(self._client.delete_object, Bucket=self._bucket, Key=key)
 
     async def get_bytes(self, key: str) -> bytes:
-        response = await asyncio.to_thread(
-            self._client.get_object, Bucket=self._bucket, Key=key
-        )
+        response = await asyncio.to_thread(self._client.get_object, Bucket=self._bucket, Key=key)
         return await asyncio.to_thread(response["Body"].read)
 
     async def put_bytes(self, data: bytes, key: str, content_type: str) -> None:
@@ -104,4 +102,3 @@ def get_storage_service() -> ObjectStorage:
         bucket=settings.s3_bucket,
         presigned_url_expiry_seconds=settings.s3_presigned_url_expiry_seconds,
     )
-

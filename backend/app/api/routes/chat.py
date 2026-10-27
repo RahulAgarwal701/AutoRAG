@@ -66,4 +66,3 @@ async def stream_chat(
             "X-Accel-Buffering": "no",
         },
     )
-

@@ -11,9 +11,7 @@ from app.models.document import Document
 async def get_owned_agent(
     session: AsyncSession, user_id: uuid.UUID, agent_id: uuid.UUID
 ) -> Agent | None:
-    return await session.scalar(
-        select(Agent).where(Agent.id == agent_id, Agent.user_id == user_id)
-    )
+    return await session.scalar(select(Agent).where(Agent.id == agent_id, Agent.user_id == user_id))
 
 
 async def get_owned_document(
@@ -44,4 +42,3 @@ async def get_owned_api_key(
             ApiKey.user_id == user_id,
         )
     )
-

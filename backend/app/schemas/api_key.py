@@ -16,4 +16,3 @@ class ApiKeyRead(BaseModel):
 
 class ApiKeyCreated(ApiKeyRead):
     key: str
-

@@ -118,12 +118,8 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(["user_id"], ["users.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index(
-        op.f("ix_chat_sessions_agent_id"), "chat_sessions", ["agent_id"], unique=False
-    )
-    op.create_index(
-        op.f("ix_chat_sessions_user_id"), "chat_sessions", ["user_id"], unique=False
-    )
+    op.create_index(op.f("ix_chat_sessions_agent_id"), "chat_sessions", ["agent_id"], unique=False)
+    op.create_index(op.f("ix_chat_sessions_user_id"), "chat_sessions", ["user_id"], unique=False)
 
     op.create_table(
         "messages",
@@ -136,9 +132,7 @@ def upgrade() -> None:
         sa.Column(
             "created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False
         ),
-        sa.ForeignKeyConstraint(
-            ["chat_session_id"], ["chat_sessions.id"], ondelete="CASCADE"
-        ),
+        sa.ForeignKeyConstraint(["chat_session_id"], ["chat_sessions.id"], ondelete="CASCADE"),
         sa.ForeignKeyConstraint(["user_id"], ["users.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
     )
@@ -168,4 +162,3 @@ def downgrade() -> None:
     op.drop_index(op.f("ix_users_email"), table_name="users")
     op.drop_table("users")
     document_status.drop(op.get_bind(), checkfirst=True)
-

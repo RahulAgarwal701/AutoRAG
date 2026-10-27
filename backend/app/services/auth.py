@@ -39,4 +39,3 @@ async def authenticate_user(session: AsyncSession, email: str, password: str) ->
     if user is None or not verify_password(password, user.password_hash):
         return None
     return user
-

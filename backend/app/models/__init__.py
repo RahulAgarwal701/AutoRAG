@@ -4,6 +4,7 @@ from app.models.agent import Agent
 from app.models.api_key import ApiKey
 from app.models.chat import ChatSession, Message
 from app.models.document import Document, DocumentStatus
+from app.models.evaluation import EvaluationCase, EvaluationRun
 from app.models.user import User
 
 __all__ = [
@@ -12,7 +13,8 @@ __all__ = [
     "ChatSession",
     "Document",
     "DocumentStatus",
+    "EvaluationCase",
+    "EvaluationRun",
     "Message",
     "User",
 ]
-

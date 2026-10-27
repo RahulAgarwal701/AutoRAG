@@ -1,7 +1,7 @@
 from functools import lru_cache
 from typing import Annotated
 
-from pydantic import BeforeValidator, SecretStr
+from pydantic import BeforeValidator, Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
@@ -30,15 +30,18 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     api_v1_prefix: str = "/api/v1"
     cors_origins: CorsOrigins = ["http://localhost:3000"]
+    cors_origin_regex: str | None = None
     jwt_secret: SecretStr
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 15
     refresh_token_expire_days: int = 7
     widget_session_token_expire_minutes: int = 30
+    widget_policy_token: SecretStr | None = None
     api_key_rate_limit: int = 60
     ip_rate_limit: int = 120
     widget_session_ip_rate_limit: int = 30
     rate_limit_window_seconds: int = 60
+    max_request_body_size_mb: int = Field(default=30, ge=1, le=100)
 
     database_url: str = "postgresql+asyncpg://autorag:autorag@localhost:5432/autorag"
     redis_url: str = "redis://localhost:6379/0"
@@ -49,6 +52,9 @@ class Settings(BaseSettings):
     temporal_address: str = "localhost:7233"
     temporal_namespace: str = "default"
     temporal_task_queue: str = "autorag-ingestion"
+    temporal_api_key: SecretStr | None = None
+    temporal_mtls_cert: SecretStr | None = None
+    temporal_mtls_private_key: SecretStr | None = None
     run_temporal_worker_in_process: bool = False
 
     aws_access_key_id: str | None = None
@@ -79,12 +85,49 @@ class Settings(BaseSettings):
     tool_webhook_allowed_hosts: CorsOrigins = []
 
     sentry_dsn: str | None = None
+    sentry_traces_sample_rate: float = Field(default=0.1, ge=0, le=1)
     langfuse_public_key: str | None = None
     langfuse_secret_key: str | None = None
     langfuse_host: str = "https://cloud.langfuse.com"
+    metrics_token: SecretStr | None = None
+
+    @field_validator(
+        "qdrant_api_key",
+        "aws_access_key_id",
+        "aws_secret_access_key",
+        "gemini_api_key",
+        "cohere_api_key",
+        "openai_api_key",
+        "anthropic_api_key",
+        "xai_api_key",
+        "web_search_api_key",
+        "cors_origin_regex",
+        "widget_policy_token",
+        "temporal_api_key",
+        "temporal_mtls_cert",
+        "temporal_mtls_private_key",
+        "s3_endpoint_url",
+        "s3_public_endpoint_url",
+        "sentry_dsn",
+        "langfuse_public_key",
+        "langfuse_secret_key",
+        "metrics_token",
+        mode="before",
+    )
+    @classmethod
+    def blank_optional_value_is_none(cls, value: object) -> object:
+        if isinstance(value, str) and not value.strip():
+            return None
+        return value
+
+    @field_validator("database_url", mode="before")
+    @classmethod
+    def use_async_postgres_driver(cls, value: object) -> object:
+        if isinstance(value, str) and value.startswith("postgresql://"):
+            return value.replace("postgresql://", "postgresql+asyncpg://", 1)
+        return value
 
 
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
-

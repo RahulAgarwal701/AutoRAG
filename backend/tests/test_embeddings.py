@@ -37,9 +37,7 @@ async def test_gemini_provider_batches_retrieval_document_embeddings(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     client = FakeGeminiClient()
-    monkeypatch.setattr(
-        "app.services.embeddings.genai.Client", lambda **_: client
-    )
+    monkeypatch.setattr("app.services.embeddings.genai.Client", lambda **_: client)
     provider = GeminiEmbeddingProvider("test-key", "gemini-embedding-001", 1536)
 
     vectors = await provider.embed(["first chunk", "second chunk"])

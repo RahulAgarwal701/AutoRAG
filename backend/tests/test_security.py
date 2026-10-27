@@ -17,4 +17,3 @@ def test_api_key_generator_returns_only_sha256_storage_value() -> None:
     assert hashed_key == hash_api_key(full_key)
     assert full_key not in hashed_key
     assert len(hashed_key) == 64
-

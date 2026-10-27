@@ -1,0 +1,134 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: "3.12"
+  NODE_VERSION: "20"
+
+jobs:
+  backend-quality:
+    name: Backend quality and audit
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: "0.9.5"
+          enable-cache: true
+      - run: uv python install ${{ env.PYTHON_VERSION }}
+      - run: uv sync --frozen --all-groups
+      - run: uv run ruff check app migrations tests
+      - run: uv run ruff format --check app migrations tests
+      - run: uv run mypy app
+      - name: Audit Python dependencies
+        run: >-
+          uv run pip-audit
+          --ignore-vuln PYSEC-2026-2447
+          --ignore-vuln PYSEC-2026-3046
+
+  backend-tests:
+    name: Backend tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: autorag
+          POSTGRES_PASSWORD: autorag
+          POSTGRES_DB: autorag_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U autorag -d autorag_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      qdrant:
+        image: qdrant/qdrant:v1.12.6
+        ports:
+          - 6333:6333
+    env:
+      JWT_SECRET: ci-only-secret-that-is-at-least-32-characters
+      DATABASE_URL: postgresql+asyncpg://autorag:autorag@localhost:5432/autorag_test
+      TEST_POSTGRES_DSN: postgresql://autorag:autorag@localhost:5432/autorag_test
+      REDIS_URL: redis://localhost:6379/0
+      QDRANT_URL: http://localhost:6333
+      RUN_SERVICE_TESTS: "true"
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: "0.9.5"
+          enable-cache: true
+      - run: uv python install ${{ env.PYTHON_VERSION }}
+      - run: uv sync --frozen --all-groups
+      - name: Wait for Qdrant
+        run: |
+          for attempt in {1..30}; do
+            if curl --fail --silent http://localhost:6333/readyz >/dev/null; then exit 0; fi
+            sleep 2
+          done
+          exit 1
+      - run: uv run alembic upgrade head
+      - run: uv run pytest -q
+
+  frontend:
+    name: Frontend quality and build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm audit --audit-level=high
+      - run: npm run build
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:8000
+          NEXT_PUBLIC_APP_URL: http://localhost:3000
+          API_INTERNAL_URL: http://localhost:8000
+          WIDGET_POLICY_TOKEN: ci-widget-policy-token
+
+  docker:
+    name: Docker builds
+    runs-on: ubuntu-latest
+    needs: [backend-quality, backend-tests, frontend]
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build --tag autorag-backend:ci backend
+      - run: docker build --tag autorag-frontend:ci frontend

@@ -2,7 +2,7 @@ import asyncio
 import uuid
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Literal, Protocol
 
 from pydantic import BaseModel
 from qdrant_client import AsyncQdrantClient, models
@@ -45,17 +45,11 @@ class HybridHit:
     payload: Mapping[str, object]
 
 
-def build_tenant_agent_filter(
-    tenant_id: uuid.UUID, agent_id: uuid.UUID
-) -> models.Filter:
+def build_tenant_agent_filter(tenant_id: uuid.UUID, agent_id: uuid.UUID) -> models.Filter:
     return models.Filter(
         must=[
-            models.FieldCondition(
-                key="tenant_id", match=models.MatchValue(value=str(tenant_id))
-            ),
-            models.FieldCondition(
-                key="agent_id", match=models.MatchValue(value=str(agent_id))
-            ),
+            models.FieldCondition(key="tenant_id", match=models.MatchValue(value=str(tenant_id))),
+            models.FieldCondition(key="agent_id", match=models.MatchValue(value=str(agent_id))),
         ]
     )
 
@@ -71,10 +65,27 @@ class QdrantHybridSearcher:
         tenant_id: uuid.UUID,
         agent_id: uuid.UUID,
         dense_vector: list[float],
-        sparse_vector: SparseVectorData,
+        sparse_vector: SparseVectorData | None,
         limit: int,
+        mode: Literal["hybrid", "dense"] = "hybrid",
     ) -> list[HybridHit]:
         tenant_filter = build_tenant_agent_filter(tenant_id, agent_id)
+        if mode == "dense":
+            response = await self._client.query_points(
+                collection_name=self._collection_name,
+                query=dense_vector,
+                using="dense",
+                query_filter=tenant_filter,
+                limit=limit,
+                with_payload=True,
+                with_vectors=False,
+            )
+            return [
+                HybridHit(score=point.score, payload=point.payload or {})
+                for point in response.points
+            ]
+        if sparse_vector is None:
+            raise ValueError("Sparse query vector is required for hybrid retrieval")
         response = await self._client.query_points(
             collection_name=self._collection_name,
             prefetch=[
@@ -101,9 +112,24 @@ class QdrantHybridSearcher:
             with_vectors=False,
         )
         return [
-            HybridHit(score=point.score, payload=point.payload or {})
-            for point in response.points
+            HybridHit(score=point.score, payload=point.payload or {}) for point in response.points
         ]
+
+    async def sample_payloads(
+        self,
+        *,
+        tenant_id: uuid.UUID,
+        agent_id: uuid.UUID,
+        limit: int,
+    ) -> list[Mapping[str, object]]:
+        points, _ = await self._client.scroll(
+            collection_name=self._collection_name,
+            scroll_filter=build_tenant_agent_filter(tenant_id, agent_id),
+            limit=limit,
+            with_payload=True,
+            with_vectors=False,
+        )
+        return [point.payload or {} for point in points]
 
 
 class RetrievalService:
@@ -145,48 +171,60 @@ class RetrievalService:
             standalone_query=standalone_query,
         )
 
+    async def sample_indexed_payloads(
+        self, *, tenant_id: uuid.UUID, agent: Agent, limit: int
+    ) -> list[Mapping[str, object]]:
+        if agent.user_id != tenant_id:
+            raise ValueError("Agent does not belong to the tenant")
+        return await self._searcher.sample_payloads(
+            tenant_id=tenant_id, agent_id=agent.id, limit=limit
+        )
+
     async def retrieve_standalone(
         self,
         *,
         tenant_id: uuid.UUID,
         agent: Agent,
         standalone_query: str,
+        mode: Literal["hybrid", "dense"] = "hybrid",
+        use_reranker: bool | None = None,
+        top_k: int | None = None,
     ) -> list[RetrievedChunk]:
         """Retrieve an already rewritten query without rewriting it a second time."""
         if agent.user_id != tenant_id:
             raise ValueError("Agent does not belong to the tenant")
         if not standalone_query.strip():
             raise ValueError("Standalone query cannot be empty")
-        dense_vector, sparse_vectors = await asyncio.gather(
-            self._dense_embeddings.embed_query(standalone_query),
-            self._sparse_embeddings.embed([standalone_query]),
-        )
-        candidate_limit = max(agent.top_k * 4, 20) if agent.use_reranker else agent.top_k
+        dense_vector = await self._dense_embeddings.embed_query(standalone_query)
+        sparse_vector: SparseVectorData | None = None
+        if mode == "hybrid":
+            sparse_vector = (await self._sparse_embeddings.embed([standalone_query]))[0]
+        reranking = agent.use_reranker if use_reranker is None else use_reranker
+        result_limit = top_k or agent.top_k
+        candidate_limit = max(result_limit * 4, 20) if reranking else result_limit
         hits = await self._searcher.search(
             tenant_id=tenant_id,
             agent_id=agent.id,
             dense_vector=dense_vector,
-            sparse_vector=sparse_vectors[0],
+            sparse_vector=sparse_vector,
             limit=candidate_limit,
+            mode=mode,
         )
         if not hits:
             return []
-        if agent.use_reranker:
+        if reranking:
             if self._reranker is None:
-                raise RuntimeError(
-                    "Agent requires reranking, but COHERE_API_KEY is not configured"
-                )
+                raise RuntimeError("Agent requires reranking, but COHERE_API_KEY is not configured")
             reranked = await self._reranker.rerank(
                 standalone_query,
                 [str(hit.payload.get("text", "")) for hit in hits],
-                agent.top_k,
+                result_limit,
             )
             hits = [
-                HybridHit(score=item.score, payload=hits[item.index].payload)
-                for item in reranked
+                HybridHit(score=item.score, payload=hits[item.index].payload) for item in reranked
             ]
         else:
-            hits = hits[: agent.top_k]
+            hits = hits[:result_limit]
         return await self._enrich_hits(tenant_id, agent.id, hits)
 
     async def _enrich_hits(
@@ -212,10 +250,7 @@ class RetrievalService:
         document_map = {document.id: document for document in documents}
         source_urls = dict(
             await asyncio.gather(
-                *(
-                    self._source_url_pair(document)
-                    for document in document_map.values()
-                )
+                *(self._source_url_pair(document) for document in document_map.values())
             )
         )
         results: list[RetrievedChunk] = []
@@ -241,9 +276,7 @@ class RetrievalService:
         return results
 
     async def _source_url_pair(self, document: Document) -> tuple[uuid.UUID, str]:
-        url = await self._storage.create_presigned_get_url(
-            document.s3_key, document.filename
-        )
+        url = await self._storage.create_presigned_get_url(document.s3_key, document.filename)
         return document.id, url
 
 
@@ -261,18 +294,14 @@ def create_retrieval_service(session: AsyncSession) -> RetrievalService:
         else BM25SparseEmbeddingProvider()
     )
     reranker = (
-        CohereReranker(
-            settings.cohere_api_key.get_secret_value(), settings.cohere_rerank_model
-        )
+        CohereReranker(settings.cohere_api_key.get_secret_value(), settings.cohere_rerank_model)
         if settings.cohere_api_key is not None
         else None
     )
     return RetrievalService(
         session=session,
         searcher=QdrantHybridSearcher(
-            AsyncQdrantClient(
-                url=settings.qdrant_url, api_key=settings.qdrant_api_key
-            ),
+            AsyncQdrantClient(url=settings.qdrant_url, api_key=settings.qdrant_api_key),
             settings.qdrant_collection_name,
         ),
         dense_embeddings=dense_embeddings,

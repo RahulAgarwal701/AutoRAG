@@ -160,10 +160,11 @@ export function CreateAgentWizard() {
   const snippets = useMemo(() => {
     if (!agentId || !apiKey) return null;
     const backend = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+    const frontend = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
     const curl = `curl -X POST "${backend}/v1/agents/${agentId}/chat" \\\n  -H "Authorization: Bearer ${apiKey.key}" \\\n  -H "Content-Type: application/json" \\\n  -d '{"message":"What is in my documents?","stream":false}'`;
     const python = `import requests\n\nresponse = requests.post(\n    "${backend}/v1/agents/${agentId}/chat",\n    headers={"Authorization": "Bearer ${apiKey.key}"},\n    json={"message": "What is in my documents?", "stream": False},\n)\nprint(response.json())`;
     const javascript = `const response = await fetch("${backend}/v1/agents/${agentId}/chat", {\n  method: "POST",\n  headers: {\n    "Authorization": "Bearer ${apiKey.key}",\n    "Content-Type": "application/json",\n  },\n  body: JSON.stringify({ message: "What is in my documents?", stream: false }),\n});\nconsole.log(await response.json());`;
-    const widget = `<script\n  src="/widget.js"\n  data-agent-id="${agentId}"\n  data-api-url="${backend}"\n  async\n></script>`;
+    const widget = `<script src="${frontend}/widget.js" data-agent-id="${agentId}"></script>`;
     return { curl, python, javascript, widget };
   }, [agentId, apiKey]);
 

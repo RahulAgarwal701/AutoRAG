@@ -10,4 +10,3 @@ def test_calculator_supports_arithmetic_without_eval() -> None:
 def test_calculator_rejects_code_execution() -> None:
     with pytest.raises(ToolError):
         calculate("__import__('os').system('id')")
-

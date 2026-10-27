@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ArrowRight, Bot, Loader2, Plus, Settings2 } from "lucide-react";
+import { ArrowRight, Bot, Loader2, Plus } from "lucide-react";
 
 import { EmptyState } from "@/components/dashboard/empty-state";
 import { Badge } from "@/components/ui/badge";

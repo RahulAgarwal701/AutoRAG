@@ -61,4 +61,3 @@ async def refresh_tokens(payload: RefreshRequest, session: DatabaseSession) -> T
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
     access_token, refresh_token = create_token_pair(user.id)
     return TokenPair(access_token=access_token, refresh_token=refresh_token)
-

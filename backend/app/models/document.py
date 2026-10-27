@@ -45,4 +45,3 @@ class Document(CreatedAtMixin, Base):
     chunk_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
     agent: Mapped["Agent"] = relationship(back_populates="documents")
-

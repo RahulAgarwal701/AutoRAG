@@ -85,9 +85,7 @@ def decode_token(token: str, expected_type: TokenType) -> uuid.UUID:
         raise InvalidTokenError("Invalid or expired token") from exc
 
 
-def create_widget_session_token(
-    agent_id: uuid.UUID, user_id: uuid.UUID, origin: str
-) -> str:
+def create_widget_session_token(agent_id: uuid.UUID, user_id: uuid.UUID, origin: str) -> str:
     settings = get_settings()
     now = datetime.now(UTC)
     payload = {
@@ -138,4 +136,3 @@ def generate_api_key() -> tuple[str, str, str]:
 
 def hash_api_key(api_key: str) -> str:
     return hashlib.sha256(api_key.encode("utf-8")).hexdigest()
-

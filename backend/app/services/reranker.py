@@ -23,9 +23,7 @@ class CohereReranker:
         self._client = cohere.ClientV2(api_key=api_key)
         self._model = model
 
-    async def rerank(
-        self, query: str, documents: Sequence[str], top_n: int
-    ) -> list[RerankResult]:
+    async def rerank(self, query: str, documents: Sequence[str], top_n: int) -> list[RerankResult]:
         response = await asyncio.to_thread(
             self._client.rerank,
             model=self._model,

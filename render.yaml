@@ -1,0 +1,200 @@
+services:
+  - type: web
+    name: autorag-api
+    runtime: docker
+    region: singapore
+    plan: 0.5c-512mb
+    dockerContext: ./backend
+    dockerfilePath: ./backend/Dockerfile
+    healthCheckPath: /health
+    maxShutdownDelaySeconds: 60
+    autoDeployTrigger: checksPass
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: DEBUG
+        value: "false"
+      - key: LOG_LEVEL
+        value: INFO
+      - key: RUN_MIGRATIONS
+        value: "true"
+      - key: WEB_CONCURRENCY
+        value: "1"
+      - key: GUNICORN_TIMEOUT
+        value: "120"
+      - key: GUNICORN_GRACEFUL_TIMEOUT
+        value: "30"
+      - key: MAX_REQUEST_BODY_SIZE_MB
+        value: "30"
+      - key: RUN_TEMPORAL_WORKER_IN_PROCESS
+        value: "false"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: autorag-postgres
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: autorag-redis
+          property: connectionString
+      - key: JWT_SECRET
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+      - key: CORS_ORIGIN_REGEX
+        sync: false
+      - key: WIDGET_POLICY_TOKEN
+        sync: false
+      - key: QDRANT_URL
+        sync: false
+      - key: QDRANT_API_KEY
+        sync: false
+      - key: QDRANT_COLLECTION_NAME
+        value: autorag_chunks
+      - key: TEMPORAL_ADDRESS
+        sync: false
+      - key: TEMPORAL_NAMESPACE
+        sync: false
+      - key: TEMPORAL_TASK_QUEUE
+        value: autorag-ingestion
+      - key: TEMPORAL_API_KEY
+        sync: false
+      - key: TEMPORAL_MTLS_CERT
+        sync: false
+      - key: TEMPORAL_MTLS_PRIVATE_KEY
+        sync: false
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: AWS_REGION
+        value: ap-south-1
+      - key: S3_BUCKET
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: EMBEDDING_MODEL
+        value: gemini-embedding-001
+      - key: EMBEDDING_DIMENSION
+        value: "1536"
+      - key: EMBEDDING_BATCH_SIZE
+        value: "64"
+      - key: SPARSE_EMBEDDING_PROVIDER
+        value: bm25
+      - key: QUERY_REWRITE_MODEL
+        value: gemini-2.5-flash-lite
+      - key: COHERE_API_KEY
+        sync: false
+      - key: COHERE_RERANK_MODEL
+        value: rerank-v3.5
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: XAI_API_KEY
+        sync: false
+      - key: XAI_BASE_URL
+        value: https://api.x.ai/v1
+      - key: WEB_SEARCH_URL
+        sync: false
+      - key: WEB_SEARCH_API_KEY
+        sync: false
+      - key: TOOL_WEBHOOK_ALLOWED_HOSTS
+        sync: false
+      - key: SENTRY_DSN
+        sync: false
+      - key: SENTRY_TRACES_SAMPLE_RATE
+        value: "0.1"
+      - key: LANGFUSE_PUBLIC_KEY
+        sync: false
+      - key: LANGFUSE_SECRET_KEY
+        sync: false
+      - key: LANGFUSE_HOST
+        value: https://cloud.langfuse.com
+      - key: METRICS_TOKEN
+        sync: false
+
+  - type: worker
+    name: autorag-temporal-worker
+    runtime: docker
+    region: singapore
+    plan: 0.5c-512mb
+    dockerContext: ./backend
+    dockerfilePath: ./backend/Dockerfile
+    dockerCommand: python -m app.workflows.worker
+    maxShutdownDelaySeconds: 300
+    autoDeployTrigger: checksPass
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: DEBUG
+        value: "false"
+      - key: LOG_LEVEL
+        value: INFO
+      - key: RUN_MIGRATIONS
+        value: "false"
+      - key: RUN_TEMPORAL_WORKER_IN_PROCESS
+        value: "false"
+      - key: JWT_SECRET
+        sync: false
+      - key: DATABASE_URL
+        fromDatabase:
+          name: autorag-postgres
+          property: connectionString
+      - key: QDRANT_URL
+        sync: false
+      - key: QDRANT_API_KEY
+        sync: false
+      - key: QDRANT_COLLECTION_NAME
+        value: autorag_chunks
+      - key: TEMPORAL_ADDRESS
+        sync: false
+      - key: TEMPORAL_NAMESPACE
+        sync: false
+      - key: TEMPORAL_TASK_QUEUE
+        value: autorag-ingestion
+      - key: TEMPORAL_API_KEY
+        sync: false
+      - key: TEMPORAL_MTLS_CERT
+        sync: false
+      - key: TEMPORAL_MTLS_PRIVATE_KEY
+        sync: false
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: AWS_REGION
+        value: ap-south-1
+      - key: S3_BUCKET
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: EMBEDDING_MODEL
+        value: gemini-embedding-001
+      - key: EMBEDDING_DIMENSION
+        value: "1536"
+      - key: EMBEDDING_BATCH_SIZE
+        value: "64"
+      - key: SPARSE_EMBEDDING_PROVIDER
+        value: bm25
+      - key: SENTRY_DSN
+        sync: false
+      - key: SENTRY_TRACES_SAMPLE_RATE
+        value: "0.1"
+
+  - type: keyvalue
+    name: autorag-redis
+    region: singapore
+    plan: 256mb
+    ipAllowList: []
+    maxmemoryPolicy: allkeys-lru
+    persistenceMode: journal-snapshot
+
+databases:
+  - name: autorag-postgres
+    region: singapore
+    plan: 0.5c-1g
+    postgresMajorVersion: "16"
+    databaseName: autorag
+    user: autorag
+    ipAllowList: []

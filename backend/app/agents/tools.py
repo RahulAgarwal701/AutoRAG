@@ -60,21 +60,15 @@ class ToolExecutor:
     def __init__(self, settings: Settings | None = None) -> None:
         self._settings = settings or get_settings()
 
-    async def run(
-        self, tools: Sequence[Mapping[str, Any]], query: str
-    ) -> ToolResult | None:
+    async def run(self, tools: Sequence[Mapping[str, Any]], query: str) -> ToolResult | None:
         enabled = [tool for tool in tools if tool.get("enabled", True)]
         lowered = query.strip().lower()
-        calculator = next(
-            (tool for tool in enabled if tool.get("type") == "calculator"), None
-        )
+        calculator = next((tool for tool in enabled if tool.get("type") == "calculator"), None)
         if calculator is not None and lowered.startswith("calculate "):
             expression = query.strip()[len("calculate ") :]
             return ToolResult("calculator", str(calculate(expression)))
 
-        web_search = next(
-            (tool for tool in enabled if tool.get("type") == "web_search"), None
-        )
+        web_search = next((tool for tool in enabled if tool.get("type") == "web_search"), None)
         if web_search is not None and lowered.startswith("search web for "):
             search_query = query.strip()[len("search web for ") :]
             return await self._web_search(search_query)
@@ -117,4 +111,3 @@ class ToolExecutor:
             response = await client.post(url, json={"query": query})
             response.raise_for_status()
         return ToolResult(name, response.text[:10_000])
-

@@ -36,9 +36,7 @@ class GeminiEmbeddingProvider:
         embeddings = await self._embed([query], task_type="RETRIEVAL_QUERY")
         return embeddings[0]
 
-    async def _embed(
-        self, texts: Sequence[str], *, task_type: str
-    ) -> list[list[float]]:
+    async def _embed(self, texts: Sequence[str], *, task_type: str) -> list[list[float]]:
         delay = 1.0
         for attempt in range(6):
             try:
@@ -85,10 +83,10 @@ class BM25SparseEmbeddingProvider:
                     + (document_count - document_frequency[term] + 0.5)
                     / (document_frequency[term] + 0.5)
                 )
-                score = inverse_document_frequency * (frequency * 2.2) / (
-                    frequency
-                    + 1.2
-                    * (0.25 + 0.75 * len(terms) / max(average_length, 1.0))
+                score = (
+                    inverse_document_frequency
+                    * (frequency * 2.2)
+                    / (frequency + 1.2 * (0.25 + 0.75 * len(terms) / max(average_length, 1.0)))
                 )
                 values[index] = values.get(index, 0.0) + score
             indices = sorted(values)

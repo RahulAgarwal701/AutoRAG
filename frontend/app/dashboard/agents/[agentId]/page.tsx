@@ -1,5 +1,6 @@
 import { AgentOverview } from "@/components/dashboard/agent-overview";
 
-export default function AgentPage({ params }: { params: { agentId: string } }) {
-  return <AgentOverview agentId={params.agentId} />;
+export default async function AgentPage({ params }: { params: Promise<{ agentId: string }> }) {
+  const { agentId } = await params;
+  return <AgentOverview agentId={agentId} />;
 }

@@ -59,4 +59,3 @@ def get_rate_limiter() -> SlidingWindowRateLimiter:
     settings = get_settings()
     redis = Redis.from_url(settings.redis_url, decode_responses=True)
     return SlidingWindowRateLimiter(redis, settings.rate_limit_window_seconds)
-

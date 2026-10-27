@@ -21,4 +21,3 @@ class DocumentRead(BaseModel):
 class PresignedUrlResponse(BaseModel):
     url: str
     expires_in: int
-

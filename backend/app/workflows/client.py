@@ -5,7 +5,8 @@ from typing import Protocol
 
 from temporalio.client import Client
 
-from app.core.config import get_settings
+from app.core.config import Settings, get_settings
+from app.workflows.connection import connect_temporal
 from app.workflows.ingestion import IngestDocumentWorkflow, IngestionWorkflowInput
 
 
@@ -24,10 +25,9 @@ class WorkflowStarter(Protocol):
 
 
 class TemporalWorkflowStarter:
-    def __init__(self, address: str, namespace: str, task_queue: str) -> None:
-        self._address = address
-        self._namespace = namespace
-        self._task_queue = task_queue
+    def __init__(self, settings: Settings) -> None:
+        self._settings = settings
+        self._task_queue = settings.temporal_task_queue
         self._client: Client | None = None
         self._client_lock = asyncio.Lock()
 
@@ -36,10 +36,7 @@ class TemporalWorkflowStarter:
             return self._client
         async with self._client_lock:
             if self._client is None:
-                self._client = await Client.connect(
-                    self._address,
-                    namespace=self._namespace,
-                )
+                self._client = await connect_temporal(self._settings)
         return self._client
 
     async def start_document_ingestion(
@@ -74,9 +71,4 @@ class TemporalWorkflowStarter:
 @lru_cache
 def get_workflow_starter() -> WorkflowStarter:
     settings = get_settings()
-    return TemporalWorkflowStarter(
-        address=settings.temporal_address,
-        namespace=settings.temporal_namespace,
-        task_queue=settings.temporal_task_queue,
-    )
-
+    return TemporalWorkflowStarter(settings)

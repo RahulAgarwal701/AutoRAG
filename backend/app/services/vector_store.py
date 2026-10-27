@@ -28,9 +28,7 @@ class QdrantVectorStore:
                 models.FieldCondition(
                     key="tenant_id", match=models.MatchValue(value=str(tenant_id))
                 ),
-                models.FieldCondition(
-                    key="agent_id", match=models.MatchValue(value=str(agent_id))
-                ),
+                models.FieldCondition(key="agent_id", match=models.MatchValue(value=str(agent_id))),
                 models.FieldCondition(
                     key="document_id", match=models.MatchValue(value=str(document_id))
                 ),
@@ -48,4 +46,3 @@ def get_vector_store() -> VectorStore:
     settings = get_settings()
     client = AsyncQdrantClient(url=settings.qdrant_url, api_key=settings.qdrant_api_key)
     return QdrantVectorStore(client, settings.qdrant_collection_name)
-

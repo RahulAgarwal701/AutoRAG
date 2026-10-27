@@ -95,9 +95,7 @@ async def download_from_s3(input: DownloadInput) -> str:
 async def parse_document(input: ParseInput) -> str:
     data = await get_storage_service().get_bytes(input.source_key)
     parsed = parse_document_bytes(data, input.filename)
-    return await _write_json(
-        f"{input.artifact_prefix}/parsed.json", parsed.model_dump_json()
-    )
+    return await _write_json(f"{input.artifact_prefix}/parsed.json", parsed.model_dump_json())
 
 
 @activity.defn(name="chunk_document")
@@ -112,9 +110,7 @@ async def chunk_document(input: ChunkInput) -> str:
             overlap_percent=input.overlap_percent,
         ),
     )
-    return await _write_json(
-        f"{input.artifact_prefix}/chunks.json", chunked.model_dump_json()
-    )
+    return await _write_json(f"{input.artifact_prefix}/chunks.json", chunked.model_dump_json())
 
 
 @activity.defn(name="embed_chunks")
@@ -144,15 +140,11 @@ async def embed_chunks(input: EmbedInput) -> str:
         sparse = all_sparse[start : start + len(batch)]
         for chunk, dense_vector, sparse_vector in zip(batch, dense, sparse, strict=True):
             embedded.append(
-                EmbeddedChunk(
-                    **chunk.model_dump(), dense=dense_vector, sparse=sparse_vector
-                )
+                EmbeddedChunk(**chunk.model_dump(), dense=dense_vector, sparse=sparse_vector)
             )
         activity.heartbeat(start + len(batch), len(chunked.chunks))
     document = EmbeddedDocument(chunks=embedded)
-    return await _write_json(
-        f"{input.artifact_prefix}/embedded.json", document.model_dump_json()
-    )
+    return await _write_json(f"{input.artifact_prefix}/embedded.json", document.model_dump_json())
 
 
 @activity.defn(name="upsert_to_qdrant")

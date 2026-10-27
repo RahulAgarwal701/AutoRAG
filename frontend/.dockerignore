@@ -4,3 +4,5 @@ npm-debug.log*
 *.log
 *.status
 .DS_Store
+.env*
+!.env.example

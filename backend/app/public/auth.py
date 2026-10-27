@@ -85,18 +85,17 @@ async def authenticate_public_chat(
         ) from exc
     if claims.agent_id != agent_id:
         raise PublicApiError(401, "invalid_widget_token", "Token is for another agent")
-    agent = await session.scalar(
+    widget_agent = await session.scalar(
         select(Agent).where(Agent.id == agent_id, Agent.user_id == claims.user_id)
     )
-    if agent is None:
+    if widget_agent is None:
         raise PublicApiError(404, "agent_not_found", "Agent not found")
-    request_origin = require_allowed_origin(agent, origin)
+    request_origin = require_allowed_origin(widget_agent, origin)
     if request_origin != claims.origin:
         raise PublicApiError(403, "origin_mismatch", "Token is bound to another origin")
     return PublicAuthContext(
         user_id=claims.user_id,
-        agent=agent,
+        agent=widget_agent,
         credential_id=str(claims.token_id),
         auth_type="widget",
     )
-

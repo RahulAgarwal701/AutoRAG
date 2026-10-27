@@ -109,10 +109,7 @@ services:
   backend:
     build:
       context: ../backend
-    command:
-      - sh
-      - -c
-      - alembic upgrade head && exec uvicorn app.main:app --host 0.0.0.0 --port "$${PORT}"
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
     depends_on:
       postgres:
         condition: service_healthy
@@ -128,6 +125,7 @@ services:
         condition: service_healthy
     environment:
       APP_ENV: ${APP_ENV:-development}
+      RUN_MIGRATIONS: "true"
       DEBUG: ${DEBUG:-true}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       PORT: 8000
@@ -141,6 +139,7 @@ services:
       IP_RATE_LIMIT: ${IP_RATE_LIMIT:-120}
       WIDGET_SESSION_IP_RATE_LIMIT: ${WIDGET_SESSION_IP_RATE_LIMIT:-30}
       RATE_LIMIT_WINDOW_SECONDS: ${RATE_LIMIT_WINDOW_SECONDS:-60}
+      MAX_REQUEST_BODY_SIZE_MB: ${MAX_REQUEST_BODY_SIZE_MB:-30}
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-autorag}:${POSTGRES_PASSWORD:-autorag}@postgres:5432/${POSTGRES_DB:-autorag}
       REDIS_URL: redis://redis:6379/0
       QDRANT_URL: http://qdrant:6333
@@ -173,6 +172,9 @@ services:
       LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-}
       LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-}
       LANGFUSE_HOST: ${LANGFUSE_HOST:-https://cloud.langfuse.com}
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      SENTRY_TRACES_SAMPLE_RATE: ${SENTRY_TRACES_SAMPLE_RATE:-0.1}
+      METRICS_TOKEN: ${METRICS_TOKEN:-}
     ports:
       - "${PORT:-8000}:8000"
     healthcheck:
@@ -210,6 +212,8 @@ services:
       QUERY_REWRITE_MODEL: ${QUERY_REWRITE_MODEL:-gemini-3.5-flash-lite}
       COHERE_API_KEY: ${COHERE_API_KEY:-}
       COHERE_RERANK_MODEL: ${COHERE_RERANK_MODEL:-rerank-v3.5}
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      SENTRY_TRACES_SAMPLE_RATE: ${SENTRY_TRACES_SAMPLE_RATE:-0.1}
     restart: unless-stopped
 
   frontend:
@@ -221,6 +225,7 @@ services:
         condition: service_healthy
     environment:
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
       API_INTERNAL_URL: http://backend:8000
     ports:
       - "${FRONTEND_PORT:-3000}:3000"

@@ -25,9 +25,7 @@ class GeminiQueryRewriter:
         if not history:
             return question.strip()
         recent_history = history[-10:]
-        transcript = "\n".join(
-            f"{turn.role.upper()}: {turn.content}" for turn in recent_history
-        )
+        transcript = "\n".join(f"{turn.role.upper()}: {turn.content}" for turn in recent_history)
         prompt = (
             f"Conversation:\n{transcript}\n\n"
             f"Follow-up question:\n{question}\n\n"

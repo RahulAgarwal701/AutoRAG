@@ -18,7 +18,7 @@ class LLMMessage:
 
 
 class LLMProvider(Protocol):
-    async def stream(
+    def stream(
         self,
         *,
         model: str,
@@ -77,10 +77,7 @@ class OpenAIProvider:
             temperature=temperature,
             messages=[
                 {"role": "system", "content": system_prompt},
-                *[
-                    {"role": message.role, "content": message.content}
-                    for message in messages
-                ],
+                *[{"role": message.role, "content": message.content} for message in messages],
             ],
             stream=True,
         )
@@ -114,10 +111,7 @@ class ClaudeProvider:
             max_tokens=2_048,
             temperature=temperature,
             system=system_prompt,
-            messages=[
-                {"role": message.role, "content": message.content}
-                for message in messages
-            ],
+            messages=[{"role": message.role, "content": message.content} for message in messages],
         ) as stream:
             async for text in stream.text_stream:
                 yield text
@@ -145,4 +139,3 @@ def create_llm_provider(agent: Agent) -> LLMProvider:
             raise RuntimeError("ANTHROPIC_API_KEY is required for this agent")
         return ClaudeProvider(settings.anthropic_api_key.get_secret_value())
     raise ValueError(f"Unsupported LLM provider: {agent.llm_provider}")
-

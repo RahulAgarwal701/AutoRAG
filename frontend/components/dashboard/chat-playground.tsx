@@ -11,6 +11,14 @@ import { Textarea } from "@/components/ui/textarea";
 type Citation = { document: string; page?: number | null; snippet: string; link: string };
 type ChatMessage = { id: string; role: "user" | "assistant"; content: string; citations?: Citation[] };
 
+function streamError(data: unknown): string {
+  if (data && typeof data === "object" && "detail" in data) {
+    const detail = (data as { detail?: unknown }).detail;
+    if (typeof detail === "string" && detail.trim()) return detail;
+  }
+  return "The agent could not complete this request";
+}
+
 function parseBlock(block: string): { event: string; data: unknown } | null {
   let event = "message";
   const data: string[] = [];
@@ -66,7 +74,7 @@ export function ChatPlayground({ agentId, title = "Test your agent" }: { agentId
           if (parsed.event === "citations") {
             setMessages((current) => current.map((item) => item.id === assistantId.current ? { ...item, citations: parsed.data as Citation[] } : item));
           }
-          if (parsed.event === "error") throw new Error("The agent could not complete this request");
+          if (parsed.event === "error") throw new Error(streamError(parsed.data));
         }
         if (done) break;
       }

@@ -11,6 +11,7 @@ if TYPE_CHECKING:
     from app.models.api_key import ApiKey
     from app.models.chat import ChatSession
     from app.models.document import Document
+    from app.models.evaluation import EvaluationCase, EvaluationRun
     from app.models.user import User
 
 
@@ -32,27 +33,19 @@ class Agent(CreatedAtMixin, Base):
     )
     system_prompt: Mapped[str] = mapped_column(Text, nullable=False)
     model: Mapped[str] = mapped_column(String(120), nullable=False)
-    llm_provider: Mapped[str] = mapped_column(
-        String(20), nullable=False, default="gemini"
-    )
+    llm_provider: Mapped[str] = mapped_column(String(20), nullable=False, default="gemini")
     temperature: Mapped[float] = mapped_column(Float, nullable=False, default=0.2)
     top_k: Mapped[int] = mapped_column(Integer, nullable=False, default=5)
     use_reranker: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-    chunk_strategy: Mapped[str] = mapped_column(
-        String(20), nullable=False, default="recursive"
-    )
+    chunk_strategy: Mapped[str] = mapped_column(String(20), nullable=False, default="recursive")
     chunk_size_tokens: Mapped[int] = mapped_column(Integer, nullable=False, default=650)
-    chunk_overlap_percent: Mapped[float] = mapped_column(
-        Float, nullable=False, default=0.12
-    )
+    chunk_overlap_percent: Mapped[float] = mapped_column(Float, nullable=False, default=0.12)
     allowed_origins: Mapped[list[str]] = mapped_column(
         ARRAY(String()).with_variant(JSON, "sqlite"),
         nullable=False,
         default=list,
     )
-    tools: Mapped[list[dict[str, object]]] = mapped_column(
-        JSON, nullable=False, default=list
-    )
+    tools: Mapped[list[dict[str, object]]] = mapped_column(JSON, nullable=False, default=list)
 
     user: Mapped["User"] = relationship(back_populates="agents")
     documents: Mapped[list["Document"]] = relationship(
@@ -64,4 +57,9 @@ class Agent(CreatedAtMixin, Base):
     chat_sessions: Mapped[list["ChatSession"]] = relationship(
         back_populates="agent", cascade="all, delete-orphan", passive_deletes=True
     )
-
+    evaluation_cases: Mapped[list["EvaluationCase"]] = relationship(
+        back_populates="agent", cascade="all, delete-orphan", passive_deletes=True
+    )
+    evaluation_runs: Mapped[list["EvaluationRun"]] = relationship(
+        back_populates="agent", cascade="all, delete-orphan", passive_deletes=True
+    )

@@ -96,4 +96,3 @@ async def update_agent_widget_config(
     await session.commit()
     await session.refresh(agent)
     return agent
-

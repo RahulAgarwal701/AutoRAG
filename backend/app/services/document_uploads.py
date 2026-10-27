@@ -7,9 +7,7 @@ from fastapi import UploadFile
 
 ALLOWED_DOCUMENT_TYPES: dict[str, frozenset[str]] = {
     ".pdf": frozenset({"application/pdf"}),
-    ".docx": frozenset(
-        {"application/vnd.openxmlformats-officedocument.wordprocessingml.document"}
-    ),
+    ".docx": frozenset({"application/vnd.openxmlformats-officedocument.wordprocessingml.document"}),
     ".txt": frozenset({"text/plain"}),
     ".md": frozenset({"text/markdown", "text/plain"}),
     ".html": frozenset({"text/html"}),
@@ -53,9 +51,7 @@ def _validate_docx(file: UploadFile) -> None:
         file.file.seek(0)
 
 
-async def validate_document_upload(
-    file: UploadFile, max_size_bytes: int
-) -> ValidatedUpload:
+async def validate_document_upload(file: UploadFile, max_size_bytes: int) -> ValidatedUpload:
     filename = _safe_filename(file.filename)
     extension = Path(filename).suffix.lower()
     allowed_mime_types = ALLOWED_DOCUMENT_TYPES.get(extension)
@@ -103,4 +99,3 @@ async def validate_document_upload(
         _validate_docx(file)
 
     return ValidatedUpload(filename=filename, content_type=content_type, size=total_size)
-

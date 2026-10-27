@@ -32,11 +32,7 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.execute(
-        sa.text(
-            "UPDATE agents SET llm_provider = 'openai' WHERE llm_provider = 'gemini'"
-        )
-    )
+    op.execute(sa.text("UPDATE agents SET llm_provider = 'openai' WHERE llm_provider = 'gemini'"))
     op.alter_column(
         "agents",
         "llm_provider",

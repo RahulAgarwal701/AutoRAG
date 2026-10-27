@@ -89,9 +89,7 @@ async def client() -> AsyncIterator[AsyncClient]:
     app.dependency_overrides[get_workflow_starter] = lambda: FakeWorkflowStarter()
     app.dependency_overrides[get_vector_store] = lambda: FakeVectorStore()
     app.dependency_overrides[get_rate_limiter] = lambda: FakeRateLimiter()
-    async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test"
-    ) as test_client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as test_client:
         yield test_client
     app.dependency_overrides.clear()
     await engine.dispose()
@@ -246,3 +244,39 @@ async def test_agent_owner_can_switch_to_grok_but_another_user_cannot(
     assert updated.json()["llm_provider"] == "grok"
     assert updated.json()["model"] == "grok-4.7"
 
+
+@pytest.mark.asyncio
+async def test_golden_evaluation_cases_are_tenant_scoped(client: AsyncClient) -> None:
+    owner = await signup(client, "eval-owner@example.com")
+    intruder = await signup(client, "eval-intruder@example.com")
+    owner_headers = authorization(owner["access_token"])
+    intruder_headers = authorization(intruder["access_token"])
+    created = await client.post(
+        "/api/v1/agents",
+        headers=owner_headers,
+        json={"name": "Evaluation agent", "system_prompt": "Stay grounded."},
+    )
+    agent_id = created.json()["id"]
+
+    case = await client.post(
+        f"/api/v1/agents/{agent_id}/evaluation-cases",
+        headers=owner_headers,
+        json={
+            "question": "What is the refund period?",
+            "reference_answer": "The refund period is 30 days.",
+        },
+    )
+
+    assert case.status_code == 201
+    assert case.json()["source"] == "manual"
+    assert (
+        await client.get(
+            f"/api/v1/agents/{agent_id}/evaluation-cases",
+            headers=intruder_headers,
+        )
+    ).status_code == 404
+    owner_cases = await client.get(
+        f"/api/v1/agents/{agent_id}/evaluation-cases", headers=owner_headers
+    )
+    assert owner_cases.status_code == 200
+    assert [item["id"] for item in owner_cases.json()] == [case.json()["id"]]

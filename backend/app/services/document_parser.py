@@ -39,9 +39,7 @@ def _pdf_blocks(data: bytes) -> list[ParsedBlock]:
         with fitz.open(stream=data, filetype="pdf") as pdf:
             for page_number, page in enumerate(pdf, start=1):
                 page_data = page.get_text("dict")
-                text_blocks = [
-                    block for block in page_data.get("blocks", []) if "lines" in block
-                ]
+                text_blocks = [block for block in page_data.get("blocks", []) if "lines" in block]
                 font_sizes = [
                     float(span.get("size", 0))
                     for block in text_blocks
@@ -66,23 +64,13 @@ def _pdf_blocks(data: bytes) -> list[ParsedBlock]:
                     if looks_like_heading:
                         section = text
                     else:
-                        blocks.append(
-                            ParsedBlock(text=text, page=page_number, section=section)
-                        )
+                        blocks.append(ParsedBlock(text=text, page=page_number, section=section))
     except Exception:
-        from unstructured.partition.pdf import partition_pdf
+        from pdfminer.high_level import extract_text
 
-        for element in partition_pdf(file=BytesIO(data), strategy="fast"):
-            text = str(element).strip()
-            if text:
-                metadata = getattr(element, "metadata", None)
-                blocks.append(
-                    ParsedBlock(
-                        text=text,
-                        page=getattr(metadata, "page_number", None),
-                        section=getattr(metadata, "section", None),
-                    )
-                )
+        text = extract_text(BytesIO(data)).strip()
+        if text:
+            blocks.append(ParsedBlock(text=text))
     return blocks
 
 

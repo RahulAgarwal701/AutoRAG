@@ -29,15 +29,14 @@ AgentToolConfig = Annotated[
 ]
 
 
+def _default_theme() -> dict[str, object]:
+    return {"primary_color": "#111827", "position": "bottom-right"}
+
+
 class AgentCreate(BaseModel):
     name: str = Field(min_length=1, max_length=120)
     greeting: str = Field(default="Hi! How can I help?", min_length=1, max_length=500)
-    theme: dict[str, object] = Field(
-        default_factory=lambda: {
-            "primary_color": "#111827",
-            "position": "bottom-right",
-        }
-    )
+    theme: dict[str, object] = Field(default_factory=_default_theme)
     system_prompt: str = Field(min_length=1, max_length=20_000)
     model: str = Field(default="gemini-3.5-flash-lite", min_length=1, max_length=120)
     llm_provider: Literal["gemini", "grok", "openai", "claude"] = "gemini"
@@ -95,4 +94,3 @@ class AgentRead(AgentCreate):
 
     id: uuid.UUID
     created_at: datetime
-

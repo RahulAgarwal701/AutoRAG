@@ -79,9 +79,7 @@ async def upload_document(
         try:
             await storage.delete(s3_key)
         except Exception:
-            logger.exception(
-                "orphaned_document_cleanup_failed", extra={"document_id": document_id}
-            )
+            logger.exception("orphaned_document_cleanup_failed", extra={"document_id": document_id})
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Unable to create the document record",
@@ -191,4 +189,3 @@ async def delete_document(
     await session.delete(document)
     await session.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
-

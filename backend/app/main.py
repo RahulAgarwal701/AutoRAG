@@ -15,7 +15,10 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.api.router import api_router
 from app.core.config import get_settings
 from app.core.logging import configure_logging, get_logger
+from app.core.observability import configure_sentry
+from app.middleware.metrics import RequestMetricsMiddleware
 from app.middleware.public_api import AgentCORSMiddleware, PublicRequestLoggingMiddleware
+from app.middleware.request_size import RequestBodyLimitMiddleware
 from app.public.errors import PublicApiError
 
 settings = get_settings()
@@ -23,9 +26,7 @@ configure_logging(settings.log_level)
 logger = get_logger(__name__)
 
 
-async def public_api_error_handler(
-    request: Request, exc: PublicApiError
-) -> JSONResponse:
+async def public_api_error_handler(request: Request, exc: PublicApiError) -> JSONResponse:
     request_id = getattr(request.state, "request_id", "unknown")
     return JSONResponse(
         status_code=exc.status_code,
@@ -40,9 +41,7 @@ async def public_api_error_handler(
     )
 
 
-async def validation_error_handler(
-    request: Request, exc: RequestValidationError
-) -> JSONResponse:
+async def validation_error_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
     if not request.url.path.startswith("/v1/"):
         return await request_validation_exception_handler(request, exc)
     request_id = getattr(request.state, "request_id", "unknown")
@@ -58,9 +57,7 @@ async def validation_error_handler(
     )
 
 
-async def http_error_handler(
-    request: Request, exc: StarletteHTTPException
-) -> JSONResponse:
+async def http_error_handler(request: Request, exc: StarletteHTTPException) -> JSONResponse:
     if not request.url.path.startswith("/v1/"):
         return await http_exception_handler(request, exc)
     request_id = getattr(request.state, "request_id", "unknown")
@@ -96,9 +93,13 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
             except asyncio.CancelledError:
                 pass
         logger.info("application_stopped")
+        from app.agents.service import get_langfuse
+
+        get_langfuse().flush()
 
 
 def create_application() -> FastAPI:
+    configure_sentry(settings)
     application = FastAPI(
         title=settings.app_name,
         debug=settings.debug,
@@ -107,12 +108,18 @@ def create_application() -> FastAPI:
     application.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
+        allow_origin_regex=settings.cors_origin_regex,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
     )
     application.add_middleware(AgentCORSMiddleware)
     application.add_middleware(PublicRequestLoggingMiddleware)
+    application.add_middleware(RequestMetricsMiddleware)
+    application.add_middleware(
+        RequestBodyLimitMiddleware,
+        max_body_size=settings.max_request_body_size_mb * 1024 * 1024,
+    )
     application.add_exception_handler(PublicApiError, public_api_error_handler)
     application.add_exception_handler(RequestValidationError, validation_error_handler)
     application.add_exception_handler(StarletteHTTPException, http_error_handler)
@@ -121,4 +128,3 @@ def create_application() -> FastAPI:
 
 
 app = create_application()
-

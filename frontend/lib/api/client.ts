@@ -37,7 +37,9 @@ export async function apiRequest<T>(path: string, init?: RequestInit): Promise<T
     cache: "no-store",
   });
   if (response.status === 401 && typeof window !== "undefined") {
-    window.location.assign("/login?reason=expired");
+    // A hard navigation clears all mounted dashboard state after the cookie expires.
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+    window.location.href = "/login?reason=expired";
   }
   if (!response.ok) {
     const payload = await response.json().catch(() => null);

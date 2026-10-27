@@ -7,4 +7,3 @@ class PublicApiError(Exception):
     code: str
     message: str
     headers: dict[str, str] = field(default_factory=dict)
-

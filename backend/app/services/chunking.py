@@ -68,9 +68,7 @@ def _semantic_groups(blocks: list[ParsedBlock], target_tokens: int) -> list[Pars
     return groups
 
 
-def chunk_document_data(
-    document: ParsedDocument, config: ChunkingConfig
-) -> ChunkedDocument:
+def chunk_document_data(document: ParsedDocument, config: ChunkingConfig) -> ChunkedDocument:
     overlap = round(config.size_tokens * config.overlap_percent)
     source_blocks = document.blocks
     if config.strategy == "semantic":

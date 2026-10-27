@@ -15,9 +15,7 @@ logger = get_logger(__name__)
 _PUBLIC_AGENT_PATH = re.compile(r"^/v1/agents/([0-9a-fA-F-]{36})/")
 
 
-def _error_response(
-    status_code: int, code: str, message: str, request_id: str
-) -> JSONResponse:
+def _error_response(status_code: int, code: str, message: str, request_id: str) -> JSONResponse:
     return JSONResponse(
         status_code=status_code,
         content={
@@ -31,9 +29,7 @@ def _error_response(
 
 
 class PublicRequestLoggingMiddleware(BaseHTTPMiddleware):
-    async def dispatch(
-        self, request: Request, call_next: RequestResponseEndpoint
-    ) -> Response:
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         request_id = request.headers.get("x-request-id") or str(uuid.uuid4())
         request.state.request_id = request_id[:100]
         started = time.perf_counter()
@@ -72,9 +68,7 @@ class PublicRequestLoggingMiddleware(BaseHTTPMiddleware):
 
 
 class AgentCORSMiddleware(BaseHTTPMiddleware):
-    async def dispatch(
-        self, request: Request, call_next: RequestResponseEndpoint
-    ) -> Response:
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         match = _PUBLIC_AGENT_PATH.match(request.url.path)
         origin = request.headers.get("origin")
         if match is None or origin is None:
@@ -91,9 +85,7 @@ class AgentCORSMiddleware(BaseHTTPMiddleware):
         if allowed_origins is None:
             return _error_response(404, "agent_not_found", "Agent not found", request_id)
         if origin not in allowed_origins:
-            return _error_response(
-                403, "origin_not_allowed", "Origin is not allowed", request_id
-            )
+            return _error_response(403, "origin_not_allowed", "Origin is not allowed", request_id)
         cors_headers = {
             "Access-Control-Allow-Origin": origin,
             "Access-Control-Allow-Credentials": "true",

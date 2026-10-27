@@ -28,4 +28,3 @@ class ApiKey(CreatedAtMixin, Base):
     revoked: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
     agent: Mapped["Agent"] = relationship(back_populates="api_keys")
-

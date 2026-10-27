@@ -13,4 +13,3 @@ class Citation(BaseModel):
     page: int | None = None
     snippet: str
     link: str
-

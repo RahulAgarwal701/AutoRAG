@@ -1,9 +1,11 @@
 import uuid
 from collections.abc import AsyncIterator
+from types import SimpleNamespace
 from typing import Any
 
 import pytest
 from httpx import ASGITransport, AsyncClient
+from pydantic import SecretStr
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import StaticPool
 
@@ -44,12 +46,8 @@ async def api_client(monkeypatch: pytest.MonkeyPatch) -> AsyncIterator[AsyncClie
 
     app.dependency_overrides[get_db_session] = override_db_session
     app.dependency_overrides[get_rate_limiter] = lambda: AllowAllRateLimiter()
-    monkeypatch.setattr(
-        "app.middleware.public_api.async_session_factory", session_factory
-    )
-    async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test"
-    ) as test_client:
+    monkeypatch.setattr("app.middleware.public_api.async_session_factory", session_factory)
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as test_client:
         yield test_client
     app.dependency_overrides.clear()
     await engine.dispose()
@@ -80,12 +78,43 @@ def test_origin_check_requires_exact_agent_allowlist_match() -> None:
         tools=[],
     )
 
-    assert require_allowed_origin(agent, "https://allowed.example") == (
-        "https://allowed.example"
-    )
+    assert require_allowed_origin(agent, "https://allowed.example") == ("https://allowed.example")
     with pytest.raises(PublicApiError) as exc_info:
         require_allowed_origin(agent, "https://attacker.example")
     assert exc_info.value.code == "origin_not_allowed"
+
+
+async def test_widget_frame_policy_requires_server_token_and_returns_allowlist(
+    api_client: AsyncClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    owner = await signup(api_client, "frame-policy@example.com")
+    created = await api_client.post(
+        "/api/v1/agents",
+        headers=authorization(owner["access_token"]),
+        json={
+            "name": "Framed agent",
+            "system_prompt": "Use only retrieved context",
+            "allowed_origins": ["https://docs.example.com"],
+        },
+    )
+    agent_id = created.json()["id"]
+    monkeypatch.setattr(
+        "app.api.routes.widget_policy.get_settings",
+        lambda: SimpleNamespace(widget_policy_token=SecretStr("policy-secret")),
+    )
+
+    unauthorized = await api_client.get(
+        f"/internal/widget-frame-policy/{agent_id}",
+        headers={"X-Widget-Policy-Token": "wrong"},
+    )
+    allowed = await api_client.get(
+        f"/internal/widget-frame-policy/{agent_id}",
+        headers={"X-Widget-Policy-Token": "policy-secret"},
+    )
+
+    assert unauthorized.status_code == 401
+    assert allowed.status_code == 200
+    assert allowed.json() == {"allowed_origins": ["https://docs.example.com"]}
 
 
 class FakeRedis:
@@ -151,9 +180,7 @@ async def test_public_config_rejects_requests_without_origin(
         },
     )
 
-    response = await api_client.get(
-        f"/v1/agents/{created.json()['id']}/public-config"
-    )
+    response = await api_client.get(f"/v1/agents/{created.json()['id']}/public-config")
 
     assert response.status_code == 403
     assert response.json()["error"]["code"] == "origin_not_allowed"
@@ -175,20 +202,26 @@ class FakeChatAgentService:
     async def stream_events(self, **_: object) -> AsyncIterator[tuple[str, Any]]:
         yield "session", {"session_id": "9afdb85c-a49e-4c70-b3d8-eaa09a94ac5f"}
         yield "token", {"text": "The total is INR 42,750 [1]."}
-        yield "usage", {
-            "input_tokens": 20,
-            "output_tokens": 9,
-            "total_tokens": 29,
-            "estimated": True,
-        }
-        yield "citations", [
+        yield (
+            "usage",
             {
-                "document": "invoice.pdf",
-                "page": 1,
-                "snippet": "Total payable INR 42,750",
-                "link": "https://storage.test/invoice.pdf",
-            }
-        ]
+                "input_tokens": 20,
+                "output_tokens": 9,
+                "total_tokens": 29,
+                "estimated": True,
+            },
+        )
+        yield (
+            "citations",
+            [
+                {
+                    "document": "invoice.pdf",
+                    "page": 1,
+                    "snippet": "Total payable INR 42,750",
+                    "link": "https://storage.test/invoice.pdf",
+                }
+            ],
+        )
 
 
 async def create_agent_and_key(client: AsyncClient, email: str) -> tuple[str, str]:
@@ -200,9 +233,7 @@ async def create_agent_and_key(client: AsyncClient, email: str) -> tuple[str, st
         json={"name": "External agent", "system_prompt": "Stay grounded."},
     )
     agent_id = agent.json()["id"]
-    issued = await client.post(
-        f"/api/v1/agents/{agent_id}/api-keys", headers=headers
-    )
+    issued = await client.post(f"/api/v1/agents/{agent_id}/api-keys", headers=headers)
     return agent_id, issued.json()["key"]
 
 
@@ -210,12 +241,8 @@ async def create_agent_and_key(client: AsyncClient, email: str) -> tuple[str, st
 async def test_api_key_chat_supports_json_and_streaming_sse(
     api_client: AsyncClient, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    agent_id, api_key = await create_agent_and_key(
-        api_client, "external-chat@example.com"
-    )
-    monkeypatch.setattr(
-        "app.api.routes.public.ChatAgentService", FakeChatAgentService
-    )
+    agent_id, api_key = await create_agent_and_key(api_client, "external-chat@example.com")
+    monkeypatch.setattr("app.api.routes.public.ChatAgentService", FakeChatAgentService)
     headers = {"Authorization": f"Bearer {api_key}"}
 
     json_response = await api_client.post(
@@ -274,13 +301,9 @@ async def test_widget_flow_uses_origin_bound_token_without_exposing_api_key(
         },
     )
     assert preflight.status_code == 204
-    assert preflight.headers["access-control-allow-origin"] == (
-        "https://customer.example"
-    )
+    assert preflight.headers["access-control-allow-origin"] == ("https://customer.example")
 
-    config = await api_client.get(
-        f"/v1/agents/{agent_id}/public-config", headers=origin_headers
-    )
+    config = await api_client.get(f"/v1/agents/{agent_id}/public-config", headers=origin_headers)
     assert config.status_code == 200
     assert config.json() == {
         "name": "Support bot",
@@ -288,18 +311,14 @@ async def test_widget_flow_uses_origin_bound_token_without_exposing_api_key(
         "theme": {"primary_color": "#2563eb", "position": "bottom-right"},
     }
 
-    issued = await api_client.post(
-        f"/v1/agents/{agent_id}/widget/session", headers=origin_headers
-    )
+    issued = await api_client.post(f"/v1/agents/{agent_id}/widget/session", headers=origin_headers)
     assert issued.status_code == 200
     assert "ark_live_" not in issued.text
     widget_token = issued.json()["token"]
     claims = decode_widget_session_token(widget_token)
     assert claims.origin == "https://customer.example"
 
-    monkeypatch.setattr(
-        "app.api.routes.public.ChatAgentService", FakeChatAgentService
-    )
+    monkeypatch.setattr("app.api.routes.public.ChatAgentService", FakeChatAgentService)
     chat = await api_client.post(
         f"/v1/agents/{agent_id}/chat",
         headers={

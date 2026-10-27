@@ -20,4 +20,3 @@ async def create_api_key(
     await session.commit()
     await session.refresh(api_key)
     return api_key, full_key
-

@@ -33,8 +33,7 @@ def upgrade() -> None:
             postgresql.JSONB(astext_type=sa.Text()),
             nullable=False,
             server_default=sa.text(
-                "'{\"primary_color\": \"#111827\", "
-                "\"position\": \"bottom-right\"}'::jsonb"
+                '\'{"primary_color": "#111827", "position": "bottom-right"}\'::jsonb'
             ),
         ),
     )

@@ -1,5 +1,6 @@
 import { DocumentManager } from "@/components/dashboard/document-manager";
 
-export default function DocumentsPage({ params }: { params: { agentId: string } }) {
-  return <DocumentManager agentId={params.agentId} />;
+export default async function DocumentsPage({ params }: { params: Promise<{ agentId: string }> }) {
+  const { agentId } = await params;
+  return <DocumentManager agentId={agentId} />;
 }
